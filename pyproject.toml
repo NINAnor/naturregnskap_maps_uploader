@@ -1,0 +1,26 @@
+[project]
+# PEP 621 project metadata
+# See https://www.python.org/dev/peps/pep-0621/
+dependencies = [
+    "django-environ",
+]
+requires-python = ">=3.10"
+name = "naturregnskap_maps_uploader"
+version = "0.1.0"
+description = ""
+authors = [
+    {name = "Niccolò Cantù", email = "niccolo.cantu@nina.no"},
+]
+readme = "README.md"
+license = {text = "GPL-3.0+"}
+
+[project.scripts]
+"naturregnskap_maps_uploader_start" = "main:start"
+
+
+[tool.ruff]
+fix = true
+
+[tool.ruff.lint]
+select = ["E", "W", "I", "F", "UP", "ANN", "S", "B", "A", "COM", "LOG", "PTH", "Q"]
+ignore = ["ANN003", "ANN002"]

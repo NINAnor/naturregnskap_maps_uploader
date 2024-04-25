@@ -1,0 +1,12 @@
+# Changes here will be overwritten by Copier
+_commit: v1.0.5
+_src_path: gh:ninanor/python-template
+author_name: Niccolò Cantù
+default_branch_name: main
+docker: true
+email: niccolo.cantu@nina.no
+project_name: Naturregnskap Maps uploader
+project_slug: naturregnskap_maps_uploader
+repo_name: naturregnskap_maps_uploader
+repo_org: ninanor
+type_annotations: true

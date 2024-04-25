@@ -1,0 +1,20 @@
+
+
+x-app-env: &app-env
+  DEBUG: True
+
+x-app: &app
+  build:
+    context: .
+  environment:
+    <<: *app-env
+  volumes:
+    - ./src:/app/src
+  command: naturregnskap_maps_uploader_start
+  #command: python -m pdb -c continue naturregnskap_maps_uploader_start
+
+services:
+  app:
+    <<: *app
+    environment:
+      <<: *app-env
