@@ -1,8 +1,7 @@
 import logging
 import re
 
-import backoff
-from httpx import Client, HTTPError, Response
+from httpx import Client, Response
 
 
 def upsert(
@@ -48,8 +47,10 @@ def create_project_folder(
     project: dict,
 ) -> str:
     slug = project["projectNumber"]
-    res = client.post(
-        "layer-groups/",
+    res = upsert(
+        client,
+        "layer-groups",
+        slug=slug,
         json={
             "name": project["projectTitle"],
             "map": map_slug,
@@ -72,31 +73,19 @@ def create_layer(
     category = layer["categoryEcosystemAccounting"].replace(" ", "_").replace(".", "")
     category_slug = f"{project}_{category}"
 
-    @backoff.on_exception(
-        backoff.expo,
-        HTTPError,
-        giveup=lambda e: 400 <= e.response.status_code < 500,
-    )
-    def post_layergroup() -> Response:
-        res = client.get(f"layer-groups/{category_slug}/")
-        if res.status_code < 400:
-            return res
-
-        res = client.post(
-            "layer-groups/",
-            json={
-                "name": layer["kategoriNaturregnskap"],
-                "order": 0,
-                "parent": project,
-                "slug": category_slug,
-            },
-        )
-        res.raise_for_status()
-        return res
-
     logging.debug("First, create the category")
+    res = upsert(
+        client,
+        "layer-groups",
+        category_slug,
+        json={
+            "name": layer["kategoriNaturregnskap"],
+            "order": 0,
+            "parent": project,
+            "slug": category_slug,
+        },
+    )
 
-    res = post_layergroup()
     logging.debug(f"Created Category: {res.json()}")
 
     source_type = f"{layer['dataType']}-sources"
