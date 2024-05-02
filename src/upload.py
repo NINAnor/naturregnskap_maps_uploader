@@ -1,4 +1,5 @@
 import logging
+import pathlib
 import re
 
 from httpx import Client, Response
@@ -105,6 +106,34 @@ def create_layer(
     )
     res.raise_for_status()
     logging.debug(f"Created Source: {res.json()}")
+
+    res = client.post(
+        f"{source_type}/{source_slug}/upload/",
+        data={
+            "field": "original_data",
+        },
+        files={
+            # TODO: read actual file from fs
+            "file": pathlib.Path("file").open(mode="rb"),
+        },
+    )
+
+    logging.debug(f"Uploaded Source original data: {res.text}")
+    res.raise_for_status()
+
+    res = client.post(
+        f"{source_type}/{source_slug}/upload/",
+        data={
+            "field": "source",
+        },
+        files={
+            # TODO: read actual file from fs
+            "file": pathlib.Path("file").open(mode="rb"),
+        },
+    )
+
+    logging.debug(f"Uploaded Source display data: {res.text}")
+    res.raise_for_status()
 
     res = upsert(
         client,
