@@ -20,6 +20,9 @@ DEBUG=True
 ```
 
 ## How to use
+Customize the `style.json` file accordingly, you can use the option `--style` if your file has a different name
+You'll need a `schema.xlsx` file that describes the project, you can use the option `--schema` if your file has a different name
+
 Run the following command
 
 ```

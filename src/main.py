@@ -1,3 +1,4 @@
+import json
 import logging
 import pathlib
 
@@ -19,9 +20,14 @@ logging.basicConfig(level=(logging.DEBUG if DEBUG else logging.INFO))
 @click.command()
 @click.argument("url")
 @click.argument("map_slug")
-@click.argument("project_xlsx")
-def start(url: str, map_slug: str, project_xlsx: str) -> None:
-    wb = load_workbook(project_xlsx)
+@click.option("--schema", default="schema.xlsx")
+@click.option("--style", default="style.json")
+def start(url: str, map_slug: str, schema: str, style: str) -> None:
+    style_index = {}
+    with pathlib.Path(style).open("r") as style_file:
+        style_index = json.load(style_file)
+
+    wb = load_workbook(schema)
     project_sheet = wb["projectMetadata"]
     rows = project_sheet.iter_rows()
     # always skip first row
@@ -56,12 +62,23 @@ def start(url: str, map_slug: str, project_xlsx: str) -> None:
 
         logging.debug(f'uploading {dataset_metadata["datasetAlias"]}')
 
-        create_layer(
-            client=client,
-            map_slug=map_slug,
-            layer=dataset_metadata,
-            project=project_slug,
-        )
+        layer_slug = f"{project_slug}_{dataset_metadata['datasetName']}"
+
+        if dataset_metadata["skip"] == 0:
+            layer_style = (
+                style_index[layer_slug]
+                if layer_slug in style_index
+                else style_index["DEFAULT"]
+            )
+
+            create_layer(
+                client=client,
+                map_slug=map_slug,
+                layer=dataset_metadata,
+                project=project_slug,
+                slug=layer_slug,
+                style=layer_style,
+            )
 
 
 if __name__ == "__main__":

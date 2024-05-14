@@ -1,6 +1,8 @@
+import enum
 import logging
 import pathlib
 import re
+from collections import defaultdict
 
 from httpx import Client, Response
 
@@ -58,6 +60,10 @@ def create_project_folder(
             "order": 0,
             "parent": None,
             "slug": slug,
+            # TODO: use jinja
+            "description": f"""
+                <p>{project['projectDescription']}</p>
+            """,
         },
     )
     res.raise_for_status()
@@ -65,14 +71,61 @@ def create_project_folder(
     return slug
 
 
+class LayerType(enum.Enum):
+    TIF = 1
+    GPKG = 2
+    WMS = 3
+
+
+def get_layer_type(layer: dict) -> LayerType:
+    if layer["dataType"] == "vector":
+        return LayerType.GPKG
+    elif layer["dataType"] == "raster" and layer["fileType"] == "GeoTIFF":
+        return LayerType.TIF
+    elif layer["dataType"] == "raster" and layer["fileType"] == "OGC-WMS":
+        return LayerType.WMS
+
+    raise Exception("Layer type not supported!")
+
+
+PROTOCOL_BY_LAYER_TYPE = defaultdict(
+    lambda x: "",
+    {
+        LayerType.GPKG: lambda x: "pmtiles://",
+        # LayerType.TIF: lambda x: f'TITILER_ADDRESS/', # TODO: handle titiler
+    },
+)
+
+
+EXTENSION_BY_LAYER_TYPE = defaultdict(
+    lambda x: "",
+    {
+        LayerType.GPKG: lambda x: ".pmtiles",
+        LayerType.TIF: lambda x: ".cog",
+    },
+)
+
+SOURCE_BY_LAYER_TYPE = defaultdict(
+    lambda x: "sources",
+    {
+        LayerType.GPKG: lambda x: "vector-sources",
+        LayerType.TIF: lambda x: "raster-sources",
+    },
+)
+
+
 def create_layer(
     client: Client,
     map_slug: str,
     layer: dict,
     project: str,
+    slug: str,
+    style: dict,
 ) -> None:
     category = layer["categoryEcosystemAccounting"].replace(" ", "_").replace(".", "")
     category_slug = f"{project}_{category}"
+
+    layer_type = get_layer_type(layer)
 
     logging.debug("First, create the category")
     res = upsert(
@@ -89,67 +142,94 @@ def create_layer(
 
     logging.debug(f"Created Category: {res.json()}")
 
-    source_type = f"{layer['dataType']}-sources"
+    source_type = SOURCE_BY_LAYER_TYPE[layer_type](layer)
 
     result = re.search(r"(.*)\((.*)\)", layer["datasetAlias"])
-    source_slug = f"{project}_{layer['datasetName']}"
+    source_slug = f"{project}_{layer['fileName'].replace('.', '_')}"
+
+    json_data = {
+        "name": layer["fileName"],
+        "slug": source_slug,
+        "attribution": layer["datasetOwner"],
+        "metadata": layer,
+    }
+
+    if layer_type == LayerType.GPKG:
+        json_data["protocol"] = "pmtiles://"
+    elif layer_type == LayerType.TIF:
+        # TODO: handle titiler protocol generation
+        json_data["protocol"] = ""
+    # TODO: handle WMS
+
     res = upsert(
         client,
         source_type,
         source_slug,
-        json={
-            "name": result.group(1),
-            "slug": source_slug,
-            "attribution": layer["datasetOwner"],
-            "metadata": layer,
-        },
+        json=json_data,
     )
     res.raise_for_status()
     logging.debug(f"Created Source: {res.json()}")
 
-    res = client.post(
-        f"{source_type}/{source_slug}/upload/",
-        data={
-            "field": "original_data",
-        },
-        files={
-            # TODO: read actual file from fs
-            "file": pathlib.Path("file").open(mode="rb"),
-        },
-    )
+    if layer["fileSkip"] == 0:
+        filename = layer["fileName"]
+        extension = EXTENSION_BY_LAYER_TYPE[layer_type](layer)
 
-    logging.debug(f"Uploaded Source original data: {res.text}")
-    res.raise_for_status()
+        res = client.post(
+            f"{source_type}/{source_slug}/upload/",
+            data={
+                "field": "original_data",
+            },
+            files={
+                # TODO: read actual file from fs
+                "file": pathlib.Path(filename).open(mode="rb"),
+            },
+            timeout=60.0,
+        )
 
-    res = client.post(
-        f"{source_type}/{source_slug}/upload/",
-        data={
-            "field": "source",
-        },
-        files={
-            # TODO: read actual file from fs
-            "file": pathlib.Path("file").open(mode="rb"),
-        },
-    )
+        logging.debug(f"Uploaded Source original data: {res.text}")
+        res.raise_for_status()
 
-    logging.debug(f"Uploaded Source display data: {res.text}")
-    res.raise_for_status()
+        res = client.post(
+            f"{source_type}/{source_slug}/upload/",
+            data={
+                "field": "source",
+            },
+            files={
+                # TODO: read actual file from fs
+                "file": pathlib.Path(f"{filename}{extension}").open(mode="rb"),
+            },
+            timeout=60.0,
+        )
+
+        logging.debug(f"Uploaded Source display data: {res.text}")
+        res.raise_for_status()
+
+    json_data = {
+        "map": map_slug,
+        "name": result.group(1),
+        "slug": slug,
+        "group": category_slug,
+        "source": source_slug,
+        "lazy": True,
+        "hidden": True,
+        "downloadable": True,
+        # TODO: jinja
+        "description": f"""
+            <p>{layer['datasetDescription']}</p>
+            <p>Author: {layer['datasetManager']}</p>
+            """,
+    }
+
+    if layer_type == LayerType.GPKG:
+        json_data["source_layer"] = layer["datasetName"]
+        json_data["style"] = style["vector_style"]
 
     res = upsert(
         client,
         "layers",
-        source_slug,
+        slug,
         parent_resource="maps",
         parent_slug=map_slug,
-        json={
-            "map": map_slug,
-            "name": result.group(1),
-            "slug": source_slug,
-            "group": category_slug,
-            "source": source_slug,
-            "lazy": True,
-            "hidden": True,
-            "downloadable": True,
-        },
+        json=json_data,
     )
     logging.debug(res.text)
