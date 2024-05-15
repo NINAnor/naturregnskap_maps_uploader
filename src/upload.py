@@ -240,6 +240,7 @@ def create_layer(
         "lazy": True,
         "hidden": True,
         "downloadable": True,
+        "legend": style["legend"],
         # TODO: jinja
         "description": f"""
             <p>{layer['datasetDescription']}</p>
