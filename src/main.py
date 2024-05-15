@@ -4,6 +4,7 @@ import pathlib
 import click
 import environ
 from api import get_client
+from jinja2 import Environment, FileSystemLoader, select_autoescape
 from openpyxl import load_workbook
 from upload import check_map, create_layer, create_project_folder
 from yaml import safe_load
@@ -15,6 +16,12 @@ environ.Env.read_env(str(BASE_DIR / ".env"))
 DEBUG = env.bool("DEBUG", default=False)
 
 logging.basicConfig(level=(logging.DEBUG if DEBUG else logging.INFO))
+
+
+template_env = Environment(
+    loader=FileSystemLoader(pathlib.Path(__file__).parent / "templates"),
+    autoescape=select_autoescape(),
+)
 
 
 @click.command()
@@ -53,12 +60,30 @@ def start(url: str, map_slug: str, schema: str, style: str, wd: pathlib.Path) ->
         break
 
     logging.debug("found_project %s" % project_metadata)
+    project_metadata["contacts"] = []
+
+    contacts_sheet = wb["projectContacts"]
+    rows = contacts_sheet.iter_rows()
+    # always skip first row
+    next(rows)
+    header = [cell.value.strip() for cell in next(rows) if cell.value]
+    for row in rows:
+        row = [cell.value for cell in row]
+        if not any(row):
+            continue
+
+        project_metadata["contacts"].append(dict(zip(header, row, strict=True)))
 
     TOKEN = env("AUTH_TOKEN")
     logging.debug(f"using TOKEN: {TOKEN}")
     client = get_client(base_url=url, token=TOKEN)
     check_map(client, map_slug)
-    project_slug = create_project_folder(client, map_slug, project_metadata)
+    project_slug = create_project_folder(
+        client,
+        map_slug,
+        project_metadata,
+        template_env,
+    )
 
     # TODO: read and save also project owner and contributors
 
@@ -93,6 +118,7 @@ def start(url: str, map_slug: str, schema: str, style: str, wd: pathlib.Path) ->
                 style=layer_style,
                 wd=wd,
                 titiler_config=titiler_config,
+                template_env=template_env,
             )
 
 

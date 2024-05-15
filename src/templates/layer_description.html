@@ -1,0 +1,9 @@
+<h3>{{layer['datasetAlias']}}</h3>
+<p>{{layer['datasetDescription']}}</p>
+
+<h4>Metadata</h4>
+<ul>
+    {% for key, value in layer.items() %}
+        <li>{{ key }}: {{ value }}</li>
+    {% endfor %}
+</ul>

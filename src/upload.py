@@ -6,6 +6,7 @@ import re
 from collections import defaultdict
 
 from httpx import Client, Response
+from jinja2 import Environment
 
 
 def upsert(
@@ -49,8 +50,10 @@ def create_project_folder(
     client: Client,
     map_slug: str,
     project: dict,
+    template_env: Environment,
 ) -> str:
     slug = project["projectNumber"]
+    template = template_env.get_template("project_description.html")
     res = upsert(
         client,
         "layer-groups",
@@ -61,10 +64,7 @@ def create_project_folder(
             "order": 0,
             "parent": None,
             "slug": slug,
-            # TODO: use jinja
-            "description": f"""
-                <p>{project['projectDescription']}</p>
-            """,
+            "description": template.render(project=project),
         },
     )
     res.raise_for_status()
@@ -116,9 +116,12 @@ def create_layer(
     style: dict,
     wd: pathlib.Path,
     titiler_config: dict,
+    template_env: Environment,
 ) -> None:
     category = layer["categoryEcosystemAccounting"].replace(" ", "_").replace(".", "")
     category_slug = f"{project}_{category}"
+
+    template = template_env.get_template("layer_description.html")
 
     layer_type = get_layer_type(layer)
 
@@ -241,11 +244,7 @@ def create_layer(
         "hidden": True,
         "downloadable": True,
         "legend": style["legend"],
-        # TODO: jinja
-        "description": f"""
-            <p>{layer['datasetDescription']}</p>
-            <p>Author: {layer['datasetManager']}</p>
-            """,
+        "description": template.render(layer=layer),
     }
 
     if layer_type == LayerType.GPKG:

@@ -1,0 +1,20 @@
+<h3>{{project['projectTitle']}}</h3>
+<p>{{project['projectDescription']}}</p>
+
+<h4>Contacts</h4>
+<ul>
+    {% for contact in project['contacts'] %}
+        <li><ul>
+        {% for key, value in contact.items() %}
+            <li>{{ key }}: {{ value }}</li>
+        {% endfor %}
+        </ul></li>
+    {% endfor %}
+</ul>
+
+<h4>Metadata</h4>
+<ul>
+    {% for key, value in project.items() %}
+        <li>{{ key }}: {{ value }}</li>
+    {% endfor %}
+</ul>

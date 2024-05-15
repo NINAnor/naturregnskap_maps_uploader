@@ -1,7 +1,7 @@
 
 __default-vector-style: &default-vector-style
   type: fill
-  paint":
+  paint:
     fill-color: "rgba(132, 203, 131, 0.75)"
     fill-opacity: 0.75
     fill-outline-color: "rgba(2, 66, 1, 0.8)"
