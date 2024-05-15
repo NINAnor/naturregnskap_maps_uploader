@@ -32,6 +32,25 @@ naturregnskap_maps_uploader_start {http://localhost:8000} {my_map_slug}
 replace the url with the right address and the map slug with yours
 
 
-## Notes
-Client is generated from the OpenAPI Spec served at `/api/v1/docs` using [Python OpenAPI generator](https://github.com/openapi-generators/openapi-python-client).
-The generator produces a client that uses `Bearer` prefix, while DRF Auth token uses `Token` as a prefix.
+
+## Preparing the data
+requirements: GDAL
+
+**NOTE**: `GDAL_NUM_THREADS=ALL_CPUS` will use all the CPUs available, you can limit it specifing the actual number of CPUs to use `GDAL_NUM_THREADS=5`
+
+### COG
+
+```bash
+gdal_translate $DATASET $DATASET.cog -co NUM_THREADS=ALL_CPUS -co TILING_SCHEME=GoogleMapsCompatible -of COG
+```
+
+COG files must append the `.cog` extension to the original file name, **this is not a standard, but the script expects this convention**.
+
+
+### PMTiles
+```bash
+export GDAL_NUM_THREADS=ALL_CPUS
+ogr2ogr -of PMTiles $DATASET.pmtiles $DATASET -dsco MAXZOOM=$MAXZOOM -dsco MINZOOM=$MINZOOM
+```
+
+PMTiles files must append the `.pmtiles` extension to the original file name, **this is not a standard, but the script expects this convention**.
