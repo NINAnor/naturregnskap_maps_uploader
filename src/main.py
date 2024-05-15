@@ -1,4 +1,3 @@
-import json
 import logging
 import pathlib
 
@@ -7,6 +6,7 @@ import environ
 from api import get_client
 from openpyxl import load_workbook
 from upload import check_map, create_layer, create_project_folder
+from yaml import safe_load
 
 env = environ.Env()
 BASE_DIR = pathlib.Path(__file__).parent.parent
@@ -21,7 +21,7 @@ logging.basicConfig(level=(logging.DEBUG if DEBUG else logging.INFO))
 @click.argument("url")
 @click.argument("map_slug")
 @click.option("--schema", default="schema.xlsx", type=click.Path())
-@click.option("--style", default="style.json", type=click.Path())
+@click.option("--style", default="style.yml", type=click.Path())
 @click.option(
     "--wd",
     default=".",
@@ -33,7 +33,7 @@ def start(url: str, map_slug: str, schema: str, style: str, wd: pathlib.Path) ->
 
     style_index = {}
     with style_path.open("r") as style_file:
-        style_index = json.load(style_file)
+        style_index = safe_load(style_file)["datasets"]
 
     wb = load_workbook(str(schema_path))
     project_sheet = wb["projectMetadata"]

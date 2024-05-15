@@ -1,0 +1,49 @@
+
+__default-vector-style: &default-vector-style
+  type: fill
+  paint":
+    fill-color: "rgba(132, 203, 131, 0.75)"
+    fill-opacity: 0.75
+    fill-outline-color: "rgba(2, 66, 1, 0.8)"
+
+
+# Available parameters: https://titiler.nina.no/api.html#/Cloud%20Optimized%20GeoTIFF/tile_cog_tiles__tileMatrixSetId___z___x___y___scale_x__format__get
+__default-raster-style: &default-raster-style
+  colormap_name: viridis # A list of the available colormaps: titiler API documentation and https://cogeotiff.github.io/rio-tiler/colormap/
+  # NOTE: colormaps and colormap_name are mutually exclusive
+  # colormaps:
+  #   "0": [0,0,0]
+  #   "255": [255,255,255]
+  rescale: "0,255"
+
+__sequential-legend-example: &sequential-legend-example
+  type: "sequential"
+  vertical: true
+  max_label: "Minimum"
+  min_label: "Maximum"
+  # background: "linear-gradient(0deg, #000000, #ffffff)"
+  background: "rgba(132, 203, 131, 0.75)"
+
+
+__interval-legend-example: &interval-legend-example
+  type: "interval"
+  intervals: 
+    - background: "rgb(0,0,0)"
+      description: "Black"
+    - background: "#ffffff"
+      description: "White"
+
+datasets:
+  # "{projectNumber}_{datasetName}": # use the project number and the datasets name
+  #   vector_style: # only if vector
+  #   raster_style: # only if raster
+  #   legend:
+
+
+  DEFAULT:
+    vector_style:
+      <<: *default-vector-style
+    raster_style:
+      <<: *default-raster-style
+    legend:
+      <<: *sequential-legend-example

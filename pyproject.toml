@@ -8,6 +8,7 @@ dependencies = [
     "python-dateutil>=2.8.0,<3.0.0",
     "click",
     "openpyxl",
+    "pyyaml",
 ]
 requires-python = ">=3.10"
 name = "naturregnskap_maps_uploader"
