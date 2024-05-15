@@ -20,14 +20,22 @@ logging.basicConfig(level=(logging.DEBUG if DEBUG else logging.INFO))
 @click.command()
 @click.argument("url")
 @click.argument("map_slug")
-@click.option("--schema", default="schema.xlsx")
-@click.option("--style", default="style.json")
-def start(url: str, map_slug: str, schema: str, style: str) -> None:
+@click.option("--schema", default="schema.xlsx", type=click.Path())
+@click.option("--style", default="style.json", type=click.Path())
+@click.option(
+    "--wd",
+    default=".",
+    type=click.Path(dir_okay=True, exists=True, readable=True, path_type=pathlib.Path),
+)
+def start(url: str, map_slug: str, schema: str, style: str, wd: pathlib.Path) -> None:
+    style_path = wd / style
+    schema_path = wd / schema
+
     style_index = {}
-    with pathlib.Path(style).open("r") as style_file:
+    with style_path.open("r") as style_file:
         style_index = json.load(style_file)
 
-    wb = load_workbook(schema)
+    wb = load_workbook(str(schema_path))
     project_sheet = wb["projectMetadata"]
     rows = project_sheet.iter_rows()
     # always skip first row
@@ -78,6 +86,7 @@ def start(url: str, map_slug: str, schema: str, style: str) -> None:
                 project=project_slug,
                 slug=layer_slug,
                 style=layer_style,
+                wd=wd,
             )
 
 

@@ -121,6 +121,7 @@ def create_layer(
     project: str,
     slug: str,
     style: dict,
+    wd: pathlib.Path,
 ) -> None:
     category = layer["categoryEcosystemAccounting"].replace(" ", "_").replace(".", "")
     category_slug = f"{project}_{category}"
@@ -181,7 +182,7 @@ def create_layer(
             },
             files={
                 # TODO: read actual file from fs
-                "file": pathlib.Path(filename).open(mode="rb"),
+                "file": (wd / filename).open(mode="rb"),
             },
             timeout=60.0,
         )
@@ -196,7 +197,7 @@ def create_layer(
             },
             files={
                 # TODO: read actual file from fs
-                "file": pathlib.Path(f"{filename}{extension}").open(mode="rb"),
+                "file": (wd / f"{filename}{extension}").open(mode="rb"),
             },
             timeout=60.0,
         )
