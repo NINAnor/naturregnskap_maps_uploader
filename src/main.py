@@ -32,8 +32,11 @@ def start(url: str, map_slug: str, schema: str, style: str, wd: pathlib.Path) ->
     schema_path = wd / schema
 
     style_index = {}
+    titiler_config = {}
     with style_path.open("r") as style_file:
-        style_index = safe_load(style_file)["datasets"]
+        conf = safe_load(style_file)
+        style_index = conf["datasets"]
+        titiler_config = conf["titiler"]
 
     wb = load_workbook(str(schema_path))
     project_sheet = wb["projectMetadata"]
@@ -56,6 +59,8 @@ def start(url: str, map_slug: str, schema: str, style: str, wd: pathlib.Path) ->
     client = get_client(base_url=url, token=TOKEN)
     check_map(client, map_slug)
     project_slug = create_project_folder(client, map_slug, project_metadata)
+
+    # TODO: read and save also project owner and contributors
 
     dataset_sheet = wb["datasetMetadata"]
     rows = dataset_sheet.iter_rows()
@@ -87,6 +92,7 @@ def start(url: str, map_slug: str, schema: str, style: str, wd: pathlib.Path) ->
                 slug=layer_slug,
                 style=layer_style,
                 wd=wd,
+                titiler_config=titiler_config,
             )
 
 

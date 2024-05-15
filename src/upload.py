@@ -1,4 +1,5 @@
 import enum
+import json
 import logging
 import pathlib
 import re
@@ -78,23 +79,14 @@ class LayerType(enum.Enum):
 
 
 def get_layer_type(layer: dict) -> LayerType:
+    if layer["fileType"] == "OGC-WMS":
+        return LayerType.WMS
     if layer["dataType"] == "vector":
         return LayerType.GPKG
     elif layer["dataType"] == "raster" and layer["fileType"] == "GeoTIFF":
         return LayerType.TIF
-    elif layer["dataType"] == "raster" and layer["fileType"] == "OGC-WMS":
-        return LayerType.WMS
 
     raise Exception("Layer type not supported!")
-
-
-PROTOCOL_BY_LAYER_TYPE = defaultdict(
-    lambda x: "",
-    {
-        LayerType.GPKG: lambda x: "pmtiles://",
-        # LayerType.TIF: lambda x: f'TITILER_ADDRESS/', # TODO: handle titiler
-    },
-)
 
 
 EXTENSION_BY_LAYER_TYPE = defaultdict(
@@ -110,6 +102,7 @@ SOURCE_BY_LAYER_TYPE = defaultdict(
     {
         LayerType.GPKG: lambda x: "vector-sources",
         LayerType.TIF: lambda x: "raster-sources",
+        LayerType.WMS: lambda x: "sources",
     },
 )
 
@@ -122,6 +115,7 @@ def create_layer(
     slug: str,
     style: dict,
     wd: pathlib.Path,
+    titiler_config: dict,
 ) -> None:
     category = layer["categoryEcosystemAccounting"].replace(" ", "_").replace(".", "")
     category_slug = f"{project}_{category}"
@@ -146,10 +140,19 @@ def create_layer(
     source_type = SOURCE_BY_LAYER_TYPE[layer_type](layer)
 
     result = re.search(r"(.*)\((.*)\)", layer["datasetAlias"])
-    source_slug = f"{project}_{layer['fileName'].replace('.', '_')}"
+
+    source_slug = ""
+    source_name = ""
+
+    if layer_type == LayerType.GPKG:
+        source_slug = f"{project}_{layer['fileName'].replace('.', '_')}"
+        source_name = layer["fileName"]
+    else:
+        source_slug = f"{project}_{layer['datasetName'].replace('.', '_')}"
+        source_name = layer["datasetName"]
 
     json_data = {
-        "name": layer["fileName"],
+        "name": source_name,
         "slug": source_slug,
         "attribution": layer["datasetOwner"],
         "metadata": layer,
@@ -158,9 +161,27 @@ def create_layer(
     if layer_type == LayerType.GPKG:
         json_data["protocol"] = "pmtiles://"
     elif layer_type == LayerType.TIF:
-        # TODO: handle titiler protocol generation
-        json_data["protocol"] = ""
-    # TODO: handle WMS
+        style["raster_style"]
+
+        params = []
+        for key, value in style["raster_style"].items():
+            if isinstance(value, list):
+                for e in value:
+                    params.append(f"{key}={e}")
+            elif isinstance(value, dict):
+                params.append(f"{key}={json.dumps(value)}")
+            else:
+                params.append(f"{key}={value}")
+
+        json_data["protocol"] = (
+            f"{titiler_config['url']}/cog/tilejson.json?{'&'.join(params)}&url="
+        )
+    elif layer_type == LayerType.WMS:
+        json_data["extra"] = {
+            "tiles": [
+                layer["fileName"] + "&bbox={bbox-epsg-3857}",
+            ],
+        }
 
     res = upsert(
         client,
@@ -175,35 +196,40 @@ def create_layer(
         filename = layer["fileName"]
         extension = EXTENSION_BY_LAYER_TYPE[layer_type](layer)
 
-        res = client.post(
-            f"{source_type}/{source_slug}/upload/",
-            data={
-                "field": "original_data",
-            },
-            files={
-                # TODO: read actual file from fs
-                "file": (wd / filename).open(mode="rb"),
-            },
-            timeout=60.0,
-        )
+        if (wd / filename).exists():
+            res = client.post(
+                f"{source_type}/{source_slug}/upload/",
+                data={
+                    "field": "original_data",
+                },
+                files={
+                    "file": (wd / filename).open(mode="rb"),
+                },
+                timeout=60.0,
+            )
 
-        logging.debug(f"Uploaded Source original data: {res.text}")
-        res.raise_for_status()
+            logging.debug(f"Uploaded Source original data: {res.text}")
+            res.raise_for_status()
+        else:
+            logging.warn(f"Source original file not found: {str(wd / filename)}")
 
-        res = client.post(
-            f"{source_type}/{source_slug}/upload/",
-            data={
-                "field": "source",
-            },
-            files={
-                # TODO: read actual file from fs
-                "file": (wd / f"{filename}{extension}").open(mode="rb"),
-            },
-            timeout=60.0,
-        )
+        if (wd / filename).exists():
+            file = wd / f"{filename}{extension}"
+            res = client.post(
+                f"{source_type}/{source_slug}/upload/",
+                data={
+                    "field": "source",
+                },
+                files={
+                    "file": file.open(mode="rb"),
+                },
+                timeout=60.0,
+            )
 
-        logging.debug(f"Uploaded Source display data: {res.text}")
-        res.raise_for_status()
+            logging.debug(f"Uploaded Source display data: {res.text}")
+            res.raise_for_status()
+        else:
+            logging.warn(f"Source display file not found: {str(file)}")
 
     json_data = {
         "map": map_slug,

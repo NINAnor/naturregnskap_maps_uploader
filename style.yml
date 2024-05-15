@@ -15,6 +15,8 @@ __default-raster-style: &default-raster-style
   #   "0": [0,0,0]
   #   "255": [255,255,255]
   rescale: "0,255"
+  bidx: 1 # specify which band to use
+
 
 __sequential-legend-example: &sequential-legend-example
   type: "sequential"
@@ -47,3 +49,7 @@ datasets:
       <<: *default-raster-style
     legend:
       <<: *sequential-legend-example
+
+
+titiler:
+  url: "http://titiler" 
