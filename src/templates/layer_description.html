@@ -1,6 +1,11 @@
 <h3>{{layer['datasetAlias']}}</h3>
 <p>{{layer['datasetDescription']}}</p>
 
+
+{% if layer['referenceString'] %}
+<a href="{{ layer['referenceURL']}}" target="_blank">{{layer['referenceString']}}</a>
+{% endif %}
+
 <h4>Metadata</h4>
 <ul>
     {% for key, value in layer.items() %}
