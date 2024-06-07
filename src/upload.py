@@ -182,8 +182,11 @@ def create_layer(
         )
     elif layer_type == LayerType.WMS:
         json_data["extra"] = {
+            "type": "raster",
+            "tileSize": 256,
             "tiles": [
-                layer["fileName"] + "&bbox={bbox-epsg-3857}",
+                layer["fileName"]
+                + "&bbox={bbox-epsg-3857}&format=image/png&service=WMS&version=1.1.1&request=GetMap&srs=EPSG:3857&transparent=true&width=256&height=256",
             ],
         }
 
@@ -268,6 +271,12 @@ def create_layer(
     if layer_type == LayerType.GPKG:
         json_data["source_layer"] = layer["datasetName"]
         json_data["style"] = style["vector_style"]
+
+    if layer_type == LayerType.WMS:
+        json_data["style"] = {
+            "type": "raster",
+            "paint": {},
+        }
 
     res = upsert(
         client,
