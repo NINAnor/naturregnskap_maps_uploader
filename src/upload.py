@@ -5,6 +5,7 @@ import pathlib
 import re
 from collections import defaultdict
 
+import fiona
 from httpx import Client, Response
 from jinja2 import Environment
 
@@ -148,8 +149,8 @@ def create_layer(
     source_name = ""
 
     if layer_type == LayerType.GPKG:
-        source_slug = f"{project}_{layer['fileName'].replace('.', '_')}"
-        source_name = layer["fileName"]
+        source_slug = f"{project}_{layer['datasetName'].replace('.', '_')}"
+        source_name = layer["datasetName"]
     else:
         source_slug = f"{project}_{layer['datasetName'].replace('.', '_')}"
         source_name = layer["datasetName"]
@@ -195,18 +196,35 @@ def create_layer(
     res.raise_for_status()
     logging.debug(f"Created Source: {res.json()}")
 
-    if layer["fileSkip"] == 0:
+    if layer["fileSkip"] == 0 and layer_type != LayerType.WMS:
         filename = layer["fileName"]
         extension = EXTENSION_BY_LAYER_TYPE[layer_type](layer)
 
-        if (wd / filename).exists():
+        source_file = wd / filename
+
+        if layer_type == LayerType.GPKG:
+            with fiona.open(source_file, layer=layer["datasetName"]) as src:
+                profile = src.profile
+                profile["driver"] = "GPKG"
+
+                source_file = wd / f"{layer['datasetName']}.gpkg"
+                if not source_file:
+                    with fiona.open(
+                        source_file,
+                        "w",
+                        layer=layer["datasetName"],
+                        **profile,
+                    ) as dst:
+                        dst.writerecords(src)
+
+        if (source_file).exists():
             res = client.post(
                 f"{source_type}/{source_slug}/upload/",
                 data={
                     "field": "original_data",
                 },
                 files={
-                    "file": (wd / filename).open(mode="rb"),
+                    "file": source_file.open(mode="rb"),
                 },
                 timeout=60.0,
             )
@@ -216,8 +234,8 @@ def create_layer(
         else:
             logging.warn(f"Source original file not found: {str(wd / filename)}")
 
+        file = wd / f"{filename}{extension}"
         if (wd / filename).exists():
-            file = wd / f"{filename}{extension}"
             res = client.post(
                 f"{source_type}/{source_slug}/upload/",
                 data={

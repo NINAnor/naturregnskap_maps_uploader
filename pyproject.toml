@@ -9,7 +9,8 @@ dependencies = [
     "click",
     "openpyxl",
     "pyyaml",
-    "Jinja2"
+    "Jinja2",
+    "fiona",
 ]
 requires-python = ">=3.10"
 name = "naturregnskap_maps_uploader"
