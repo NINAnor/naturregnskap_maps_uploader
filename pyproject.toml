@@ -11,6 +11,7 @@ dependencies = [
     "pyyaml",
     "Jinja2",
     "fiona",
+    "cmasher",
 ]
 requires-python = ">=3.10"
 name = "naturregnskap_maps_uploader"
