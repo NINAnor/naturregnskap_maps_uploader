@@ -263,7 +263,7 @@ def create_layer(
         "source": source_slug,
         "lazy": True,
         "hidden": True,
-        "downloadable": True,
+        "downloadable": layer_type != LayerType.WMS,
         "legend": style["legend"],
         "description": template.render(layer=layer),
     }
