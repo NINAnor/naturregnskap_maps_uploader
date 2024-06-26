@@ -206,21 +206,27 @@ def create_layer(
         source_file = wd / filename
 
         if layer_type == LayerType.GPKG:
-            with fiona.open(source_file, layer=layer["datasetName"]) as src:
+            with fiona.open(source_file, layer=layer["datasetName"], mode="r") as src:
                 profile = src.profile
                 profile["driver"] = "GPKG"
 
-                source_file = wd / f"{layer['datasetName']}.gpkg"
-                if not source_file:
+                layer_source_file = wd / f"{layer['datasetName']}.gpkg"
+                if not layer_source_file.exists():
+                    logging.info(
+                        f"{str(layer_source_file)} not found, it will be extracted with fiona",
+                    )
+                    # NOTE: the datasets does not work with P://, it will produce a transaction error
                     with fiona.open(
-                        source_file,
-                        "w",
+                        layer_source_file,
+                        mode="w",
                         layer=layer["datasetName"],
                         **profile,
                     ) as dst:
                         dst.writerecords(src)
 
-        if (source_file).exists():
+            source_file = layer_source_file
+
+        if source_file.exists():
             res = client.post(
                 f"{source_type}/{source_slug}/upload/",
                 data={
@@ -235,7 +241,7 @@ def create_layer(
             logging.debug(f"Uploaded Source original data: {res.text}")
             res.raise_for_status()
         else:
-            logging.warn(f"Source original file not found: {str(wd / filename)}")
+            logging.warn(f"Source original file not found: {str(source_file)}")
 
         file = wd / f"{filename}{extension}"
         if (wd / filename).exists():
