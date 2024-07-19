@@ -144,8 +144,6 @@ def create_layer(
 
     source_type = SOURCE_BY_LAYER_TYPE[layer_type](layer)
 
-    result = re.search(r"(.*)\((.*)\)", layer["datasetAlias"])
-
     source_slug = ""
     source_name = ""
 
@@ -264,14 +262,14 @@ def create_layer(
 
     json_data = {
         "map": map_slug,
-        "name": result.group(1),
+        "name": layer["datasetAlias"],
         "slug": slug,
         "group": category_slug,
         "source": source_slug,
         "lazy": True,
         "hidden": True,
         "downloadable": layer_type != LayerType.WMS,
-        "legend": style["legend"],
+        "legend": style["legend"] if "legend" in style else {},
         "description": template.render(layer=layer),
     }
 
