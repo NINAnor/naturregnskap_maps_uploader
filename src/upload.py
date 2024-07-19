@@ -87,6 +87,7 @@ def get_layer_type(layer: dict) -> LayerType:
     elif layer["dataType"] == "raster" and layer["fileType"] == "GeoTIFF":
         return LayerType.TIF
 
+    logging.debug(f"Layer type not supported: {layer}")
     raise Exception("Layer type not supported!")
 
 

@@ -52,7 +52,7 @@ def start(url: str, map_slug: str, schema: str, style: str, wd: pathlib.Path) ->
     next(rows)
     header = [cell.value.strip() for cell in next(rows) if cell.value]
     for row in rows:
-        row = [cell.value for cell in row]
+        row = [cell.value.strip() if isinstance(cell.value, str) else cell.value for cell in row]
         if not any(row):
             continue
         project_metadata = dict(zip(header, row, strict=True))
@@ -68,7 +68,7 @@ def start(url: str, map_slug: str, schema: str, style: str, wd: pathlib.Path) ->
     next(rows)
     header = [cell.value.strip() for cell in next(rows) if cell.value]
     for row in rows:
-        row = [cell.value for cell in row]
+        row = [cell.value.strip() if isinstance(cell.value, str) else cell.value for cell in row]
         if not any(row):
             continue
 
@@ -93,7 +93,7 @@ def start(url: str, map_slug: str, schema: str, style: str, wd: pathlib.Path) ->
     next(rows)
     header = [cell.value.strip() for cell in next(rows) if cell.value]
     for row in rows:
-        row = [cell.value for cell in row]
+        row = [cell.value.strip() if isinstance(cell.value, str) else cell.value for cell in row]
         if not any(row):
             continue
         dataset_metadata = dict(zip(header, row, strict=True))
