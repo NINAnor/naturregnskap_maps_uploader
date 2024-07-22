@@ -1,20 +1,56 @@
-<h3>{{project['projectTitle']}}</h3>
-<p>{{project['projectDescription']}}</p>
+<style>
+    section {
+        margin-bottom: 40px;
+    }
+    section:first-of-type {
+        margin-top: 20px;
+    }
+    section:last-of-type {
+        margin-bottom: 0px; 
+    }
+    p {
+        line-height: 1.2; 
+        margin-top: -5px;
+        margin-bottom: -10px;
+    }
+</style>
 
-<h4>Contacts</h4>
-<ul>
-    {% for contact in project['contacts'] %}
-        <li><ul>
-        {% for key, value in contact.items() %}
-            <li>{{ key }}: {{ value }}</li>
+<section>
+    <p>{{ project.projectDescription }}</p>
+
+    {% if project.projectKeywords %}
+    <p><strong>Tags:</strong> <em>{{ project.projectKeywords }}</em></p>
+    {% endif %}
+    {% if project.url %}
+    <p><strong>Project webpage:</strong> <a href="{{ project.url }}" target="_blank" rel="noopener noreferrer">{{ project.nameURL }}</a></p>
+    {% endif %}
+</section>
+
+<section>
+    <h4>Contacts</h4>
+    <ul>
+        {% for contact in project.contacts %}
+        <li>
+            <strong>{{ contact.firstName }} {{ contact.lastName }}</strong>
+            <ul>
+                <li><strong>Role:</strong> {{ contact.contactType }}</li>
+                <li><strong>Organization:</strong> {{ contact.organizationName }}</li>
+                <li><strong>Email:</strong> {{ contact.email|urlize }}</li>
+                <li><strong>Orcid:</strong> <a href="https://orcid.org/{{ contact.orcid }}" target="_blank" rel="noopener noreferrer">https://orcid.org/{{ contact.orcid }}</a></li>
+            </ul>
+        </li>
         {% endfor %}
-        </ul></li>
-    {% endfor %}
-</ul>
+    </ul>
+</section>
 
-<h4>Metadata</h4>
-<ul>
-    {% for key, value in project.items() %}
-        <li>{{ key }}: {{ value }}</li>
-    {% endfor %}
-</ul>
+<section>
+    <h4>Project metadata</h4>
+    <ul>
+        <li><strong>Project ID:</strong> {{ project.projectID }}</li>
+        <li><strong>Project title:</strong> {{ project.projectTitle }}</li>
+        <li><strong>Project short title:</strong> {{ project.projectShortTitle }}</li>
+        <li><strong>Project type:</strong> {{ project.projectType }}</li>
+        <li><strong>Project funding:</strong> {{ project.projectFunding }}</li>
+        <li><strong>Project period:</strong> {{ project.projectPeriod }}</li>
+    </ul>
+</section>
