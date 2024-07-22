@@ -1,14 +1,108 @@
-<h3>{{layer['datasetAlias']}}</h3>
-<p>{{layer['datasetDescription']}}</p>
+<style>
+    section {
+        margin-bottom: 40px;
+    }
+    section:first-of-type {
+        margin-top: 20px;
+    }
+    section:last-of-type {
+        margin-bottom: 0px; 
+    }
+    p {
+        line-height: 1.2; 
+        margin-top: -5px;
+        margin-bottom: -10px;
+    }
+</style>
 
+<section>
+    <div class="description">
+        <h4>Description</h4>
+        <p>{{ data_description['datasetDescription'] }}</p>
+        <p><strong>Tags:</strong> <em>{{ data_description['keywords'] }}</em></p>
+    </div>
+</section>
 
-{% if layer['referenceString'] %}
-<a href="{{ layer['referenceURL']}}" target="_blank">{{layer['referenceString']}}</a>
-{% endif %}
+<section>
+    <h4>Temporal scope</h4>
+    <p>{{ temporal_scope['temporalDescription'] }}</p>
+    <p><strong>Aquisition period:</strong> <em>{{ temporal_scope['temporal_scope'] }}</em></p>
+</section>
 
-<h4>Metadata</h4>
-<ul>
-    {% for key, value in layer.items() %}
-        <li>{{ key }}: {{ value }}</li>
-    {% endfor %}
-</ul>
+<section>
+    <h4>Geographic scope</h4>
+    <p>{{ geographic_scope['locationDescription'] }}</p>
+    <p><strong>Location:</strong> <em>{{ geographic_scope['country'] }}, 
+        {{ geographic_scope['countyName'] }}, 
+        {{ geographic_scope['municipalityName'] }} ({{ geographic_scope['municipalityCode'] }})
+    </em></p>
+</section>
+
+<section>
+    <h4>Taxonomic scope</h4>
+    <p>{{ taxonomic_scope['taxonomicDescription'] }}</p>
+    {% if taxonomic_scope['taxa'] %}
+        <p><strong>Taxa:</strong></p>
+        <ul>
+            {% for word in taxonomic_scope['taxa'].split(';') %}
+                <li>{{ word.strip() }}</li>
+            {% endfor %}
+        </ul>
+    {% endif %}
+</section>
+
+<section>
+    <h4>Methodology</h4>
+    <p>{{ methodology['methodDescription'] }}</p>
+    <ul>
+        {% if methodology['docURL'] %}
+            <li><strong>Documentation webpage:</strong> <a href="{{ methodology['docURL'] }}" target="_blank">{{ methodology['docString'] }}</a></li>
+        {% endif %}
+        {% if methodology['aquisitionMethod'] %}
+            <li><strong>Acquisition method:</strong> {{ methodology['aquisitionMethod'] }}</li>
+            <li><strong>Unit:</strong> {{ methodology['unit'] }}</li>
+            <li><strong>Measuring scale:</strong> {{ methodology['measuringScale'] }}</li>
+            <li><strong>Platform:</strong> {{ methodology['platform'] }}</li>
+            <li><strong>Sensor:</strong> {{ methodology['sensor'] }}</li>
+            <li><strong>Spatial resolution:</strong> {{ methodology['spatialResolution'] }}</li>
+            <li><strong>Temporal resolution:</strong> {{ methodology['temporalResolution'] }}</li>
+        {% endif %}
+    </ul>
+</section>
+
+<section>
+    <h4>Data description</h4>
+    <ul>
+        <li><strong>Project ID:</strong> {{data_description['projectID']}}</li>
+        <li><strong>Data type:</strong> {{data_description['dataType']}}</li>
+        <li><strong>File type:</strong> {{data_description['fileType']}}</li>
+        <li><strong>Dataset name:</strong> {{data_description['datasetName']}}</li>
+        <li><strong>Dataset alias:</strong> {{data_description['datasetAlias']}}</li>
+        <li><strong>Ecosystem accounting category:</strong> {{data_description['categoryEcosystemAccounting']}}</li>
+        <li><strong>License:</strong> {{data_description['license']}}</li>
+        <li><strong>Dataset owner:</strong> {{data_description['datasetOwner']}}</li>
+    </ul>
+</section>
+
+<section>
+    <h4>Contacts</h4>
+    <ul>
+        {% for contact in project['contacts'] %}
+            <li><strong>{{ contact['firstName'] }} {{ contact['lastName'] }}</strong>
+                <ul>
+                    <li><strong>Role:</strong> {{ contact['contactType'] }}</li>
+                    <li><strong>Organization:</strong> {{ contact['organizationName'] }}</li>
+                    <li><strong>Email:</strong> {{ contact['email'] }}</li>
+                    <li><strong>Orcid:</strong> <a href="https://orcid.org/{{ contact['orcid'] }}" target="_blank">https://orcid.org/{{ contact['orcid'] }}</a></li>
+                </ul>
+            </li>
+        {% endfor %}
+    </ul>
+</section>
+
+<section>
+    <h4>Citation</h4>
+    {% if citation['referenceString'] %}
+        <p><a href="{{ citation['referenceURL'] }}" target="_blank">{{ citation['referenceString'] }}</a></p>
+    {% endif %}
+</section>

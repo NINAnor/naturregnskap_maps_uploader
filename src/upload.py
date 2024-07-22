@@ -119,12 +119,22 @@ def create_layer(
     wd: pathlib.Path,
     titiler_config: dict,
     template_env: Environment,
+    lyr_metadata: dict,
+    project_metdata: dict,
 ) -> None:
+    
     category = layer["categoryEcosystemAccounting"].replace(" ", "_").replace(".", "")
     category_slug = f"{project}_{category}"
 
-    template = template_env.get_template("layer_description.html")
+    # Metadata dictionaries
+    data_description = lyr_metadata["data_description"]
+    citation = lyr_metadata["citation"]
+    temporal_scope = lyr_metadata["temporal_scope"]
+    geographic_scope = lyr_metadata["geographic_scope"]
+    taxonomic_scope = lyr_metadata["taxonomic_scope"]
+    methodology = lyr_metadata["methodology"]
 
+    template = template_env.get_template("layer_description.html")
     layer_type = get_layer_type(layer)
 
     logging.debug("First, create the category")
@@ -270,7 +280,15 @@ def create_layer(
         "hidden": True,
         "downloadable": layer_type != LayerType.WMS,
         "legend": style["legend"] if "legend" in style else {},
-        "description": template.render(layer=layer),
+        "description": template.render(
+            data_description = data_description,
+            citation = citation,
+            temporal_scope = temporal_scope,
+            geographic_scope = geographic_scope,
+            taxonomic_scope = taxonomic_scope,
+            methodology = methodology,
+            project=project_metdata,
+            ),
     }
 
     if layer_type == LayerType.GPKG:
