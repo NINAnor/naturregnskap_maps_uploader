@@ -2,9 +2,6 @@
     section {
         margin-bottom: 40px;
     }
-    section:first-of-type {
-        margin-top: 20px;
-    }
     section:last-of-type {
         margin-bottom: 0px; 
     }
@@ -16,11 +13,9 @@
 </style>
 
 <section>
-    <div class="description">
-        <h4>Description</h4>
-        <p>{{ data_description['datasetDescription'] }}</p>
-        <p><strong>Tags:</strong> <em>{{ data_description['keywords'] }}</em></p>
-    </div>
+    <h4>Description</h4>
+    <p>{{ data_description['datasetDescription'] }}</p>
+    <p><strong>Tags:</strong> <em>{{ data_description['keywords'] }}</em></p>
 </section>
 
 <section>
@@ -80,7 +75,10 @@
         <li><strong>Dataset alias:</strong> {{data_description['datasetAlias']}}</li>
         <li><strong>Ecosystem accounting category:</strong> {{data_description['categoryEcosystemAccounting']}}</li>
         <li><strong>License:</strong> {{data_description['license']}}</li>
+        <li><strong>Data language:</strong> {{data_description['dataLanguage']}}</li>
+        <li><strong>Metadata language:</strong> {{data_description['metadataLanguage']}}</li>
         <li><strong>Dataset owner:</strong> {{data_description['datasetOwner']}}</li>
+        <li><strong>Dataset manager:</strong> {{data_description['datasetManager']}}</li>
     </ul>
 </section>
 
@@ -91,7 +89,7 @@
             <li><strong>{{ contact['firstName'] }} {{ contact['lastName'] }}</strong>
                 <ul>
                     <li><strong>Role:</strong> {{ contact['contactType'] }}</li>
-                    <li><strong>Organization:</strong> {{ contact['organizationName'] }}</li>
+                    <li><strong>Organisation:</strong> {{ contact['organisationName'] }}</li>
                     <li><strong>Email:</strong> {{ contact['email'] }}</li>
                     <li><strong>Orcid:</strong> <a href="https://orcid.org/{{ contact['orcid'] }}" target="_blank">https://orcid.org/{{ contact['orcid'] }}</a></li>
                 </ul>

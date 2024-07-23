@@ -122,16 +122,15 @@ def create_layer(
     lyr_metadata: dict,
     project_metdata: dict,
 ) -> None:
-    
     category = layer["categoryEcosystemAccounting"].replace(" ", "_").replace(".", "")
     category_slug = f"{project}_{category}"
 
     # Metadata dictionaries
-    data_description = lyr_metadata["data_description"]
+    data_description = lyr_metadata["dataDescription"]
     citation = lyr_metadata["citation"]
-    temporal_scope = lyr_metadata["temporal_scope"]
-    geographic_scope = lyr_metadata["geographic_scope"]
-    taxonomic_scope = lyr_metadata["taxonomic_scope"]
+    temporal_scope = lyr_metadata["temporalScope"]
+    geographic_scope = lyr_metadata["geographicScope"]
+    taxonomic_scope = lyr_metadata["taxonomicScope"]
     methodology = lyr_metadata["methodology"]
 
     template = template_env.get_template("layer_description.html")
@@ -186,9 +185,9 @@ def create_layer(
             else:
                 params.append(f"{key}={value}")
 
-        json_data["protocol"] = (
-            f"{titiler_config['url']}/cog/tilejson.json?{'&'.join(params)}&url="
-        )
+        json_data[
+            "protocol"
+        ] = f"{titiler_config['url']}/cog/tilejson.json?{'&'.join(params)}&url="
     elif layer_type == LayerType.WMS:
         json_data["extra"] = {
             "type": "raster",
@@ -281,14 +280,14 @@ def create_layer(
         "downloadable": layer_type != LayerType.WMS,
         "legend": style["legend"] if "legend" in style else {},
         "description": template.render(
-            data_description = data_description,
-            citation = citation,
-            temporal_scope = temporal_scope,
-            geographic_scope = geographic_scope,
-            taxonomic_scope = taxonomic_scope,
-            methodology = methodology,
+            data_description=data_description,
+            citation=citation,
+            temporal_scope=temporal_scope,
+            geographic_scope=geographic_scope,
+            taxonomic_scope=taxonomic_scope,
+            methodology=methodology,
             project=project_metdata,
-            ),
+        ),
     }
 
     if layer_type == LayerType.GPKG:
