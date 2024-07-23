@@ -52,7 +52,10 @@ def start(url: str, map_slug: str, schema: str, style: str, wd: pathlib.Path) ->
     next(rows)
     header = [cell.value.strip() for cell in next(rows) if cell.value]
     for row in rows:
-        row = [cell.value.strip() if isinstance(cell.value, str) else cell.value for cell in row]
+        row = [
+            cell.value.strip() if isinstance(cell.value, str) else cell.value
+            for cell in row
+        ]
         if not any(row):
             continue
         project_metadata = dict(zip(header, row, strict=True))
@@ -68,7 +71,10 @@ def start(url: str, map_slug: str, schema: str, style: str, wd: pathlib.Path) ->
     next(rows)
     header = [cell.value.strip() for cell in next(rows) if cell.value]
     for row in rows:
-        row = [cell.value.strip() if isinstance(cell.value, str) else cell.value for cell in row]
+        row = [
+            cell.value.strip() if isinstance(cell.value, str) else cell.value
+            for cell in row
+        ]
         if not any(row):
             continue
 
@@ -89,23 +95,31 @@ def start(url: str, map_slug: str, schema: str, style: str, wd: pathlib.Path) ->
 
     dataset_sheet = wb["datasetMetadata"]
     rows = dataset_sheet.iter_rows()
-    
+
     # header 1 = first row, filled with previous value if empty
     h1, last_value = [], None
-    h1 = [(last_value := cell.value.strip() if cell.value else last_value) for cell in next(rows)]
+    h1 = [
+        (last_value := cell.value.strip() if cell.value else last_value)
+        for cell in next(rows)
+    ]
     # header 2 = second row, should not contain empty values
     h2 = [cell.value.strip() for cell in next(rows) if cell.value]
-    
+
     display_metadata = {h1[0]: {}}
-    logging.info(f"h1: {display_metadata}")    
-    
+    logging.info(f"h1: {display_metadata}")
+
     for row in rows:
-        row = [cell.value.strip() if isinstance(cell.value, str) else cell.value for cell in row]
+        row = [
+            cell.value.strip() if isinstance(cell.value, str) else cell.value
+            for cell in row
+        ]
         if not any(row):
             continue
         # create display_metadata = {h1: {h2: value}}
         dataset_metadata = dict(zip(h2, row, strict=True))
-        dataset_metadata = {k: (v if v is not None else "") for k, v in dataset_metadata.items()}        
+        dataset_metadata = {
+            k: (v if v is not None else "") for k, v in dataset_metadata.items()
+        }
         # Created nested dict with h1 as key for h2 and value
         for h1_key, h2_key, value in zip(h1, h2, row):
             if h1_key not in display_metadata:
@@ -114,12 +128,14 @@ def start(url: str, map_slug: str, schema: str, style: str, wd: pathlib.Path) ->
                 display_metadata[h1_key][h2_key] = value
             else:
                 display_metadata[h1_key][h2_key] = ""
-            
-        # rename keys, convert None values to empty string
-        display_metadata = {k.lower().replace(" ", "_"): v for k, v in display_metadata.items()}
-        
-        logging.info(f"display_metadata: {display_metadata}")
 
+        # rename keys, convert None values to empty string, start each word with lower key
+        display_metadata = {k.replace(" ", "_"): v for k, v in display_metadata.items()}
+        display_metadata = {
+            k[0].lower() + k[1:]: v for k, v in display_metadata.items()
+        }
+
+        logging.debug(f"display_metadata: {display_metadata}")
         logging.debug(f'uploading {dataset_metadata["datasetAlias"]}')
 
         layer_slug = f"{project_slug}_{dataset_metadata['datasetName']}"
