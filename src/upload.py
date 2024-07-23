@@ -119,12 +119,21 @@ def create_layer(
     wd: pathlib.Path,
     titiler_config: dict,
     template_env: Environment,
+    lyr_metadata: dict,
+    project_metdata: dict,
 ) -> None:
     category = layer["categoryEcosystemAccounting"].replace(" ", "_").replace(".", "")
     category_slug = f"{project}_{category}"
 
-    template = template_env.get_template("layer_description.html")
+    # Metadata dictionaries
+    data_description = lyr_metadata["dataDescription"]
+    citation = lyr_metadata["citation"]
+    temporal_scope = lyr_metadata["temporalScope"]
+    geographic_scope = lyr_metadata["geographicScope"]
+    taxonomic_scope = lyr_metadata["taxonomicScope"]
+    methodology = lyr_metadata["methodology"]
 
+    template = template_env.get_template("layer_description.html")
     layer_type = get_layer_type(layer)
 
     logging.debug("First, create the category")
@@ -176,9 +185,9 @@ def create_layer(
             else:
                 params.append(f"{key}={value}")
 
-        json_data["protocol"] = (
-            f"{titiler_config['url']}/cog/tilejson.json?{'&'.join(params)}&url="
-        )
+        json_data[
+            "protocol"
+        ] = f"{titiler_config['url']}/cog/tilejson.json?{'&'.join(params)}&url="
     elif layer_type == LayerType.WMS:
         json_data["extra"] = {
             "type": "raster",
@@ -270,7 +279,15 @@ def create_layer(
         "hidden": True,
         "downloadable": layer_type != LayerType.WMS,
         "legend": style["legend"] if "legend" in style else {},
-        "description": template.render(layer=layer),
+        "description": template.render(
+            data_description=data_description,
+            citation=citation,
+            temporal_scope=temporal_scope,
+            geographic_scope=geographic_scope,
+            taxonomic_scope=taxonomic_scope,
+            methodology=methodology,
+            project=project_metdata,
+        ),
     }
 
     if layer_type == LayerType.GPKG:
