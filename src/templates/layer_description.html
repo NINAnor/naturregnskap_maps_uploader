@@ -12,34 +12,41 @@
     }
 </style>
 
+{% set data_description = lyr_metadata.data_description %}
+{% set temporal_scope = lyr_metadata.temporal_scope %}
+{% set geographic_scope = lyr_metadata.geographic_scope %}
+{% set taxonomic_scope = lyr_metadata.taxonomic_scope %}
+{% set methodology = lyr_metadata.methodology %}
+{% set citation = lyr_metadata.citation %}
+
 <section>
     <h4>Description</h4>
-    <p>{{ data_description['datasetDescription'] }}</p>
-    <p><strong>Tags:</strong> <em>{{ data_description['keywords'] }}</em></p>
+    <p>{{ data_description.dataset_description }}</p>
+    <p><strong>Tags:</strong> <em>{{ data_description.keywords }}</em></p>
 </section>
 
 <section>
     <h4>Temporal scope</h4>
-    <p>{{ temporal_scope['temporalDescription'] }}</p>
-    <p><strong>Aquisition period:</strong> <em>{{ temporal_scope['temporal_scope'] }}</em></p>
+    <p>{{ temporal_scope.temporal_description }}</p>
+    <p><strong>Aquisition period:</strong> <em>{{ temporal_scope.temporal_scope }}</em></p>
 </section>
 
 <section>
     <h4>Geographic scope</h4>
-    <p>{{ geographic_scope['locationDescription'] }}</p>
-    <p><strong>Location:</strong> <em>{{ geographic_scope['country'] }}, 
-        {{ geographic_scope['countyName'] }}, 
-        {{ geographic_scope['municipalityName'] }} ({{ geographic_scope['municipalityCode'] }})
+    <p>{{ geographic_scope.location_description }}</p>
+    <p><strong>Location:</strong> <em>{{ geographic_scope.country }}, 
+        {{ geographic_scope.county_name }}, 
+        {{ geographic_scope.municipality_name }} ({{ geographic_scope.municipality_code }})
     </em></p>
 </section>
 
 <section>
     <h4>Taxonomic scope</h4>
-    <p>{{ taxonomic_scope['taxonomicDescription'] }}</p>
-    {% if taxonomic_scope['taxa'] %}
+    <p>{{ taxonomic_scope.taxonomic_description }}</p>
+    {% if taxonomic_scope.taxa %}
         <p><strong>Taxa:</strong></p>
         <ul>
-            {% for word in taxonomic_scope['taxa'].split(';') %}
+            {% for word in taxonomic_scope.taxa.split(';') %}
                 <li>{{ word.strip() }}</li>
             {% endfor %}
         </ul>
@@ -48,19 +55,19 @@
 
 <section>
     <h4>Methodology</h4>
-    <p>{{ methodology['methodDescription'] }}</p>
+    <p>{{ methodology.method_description }}</p>
     <ul>
-        {% if methodology['docURL'] %}
-            <li><strong>Documentation webpage:</strong> <a href="{{ methodology['docURL'] }}" target="_blank">{{ methodology['docString'] }}</a></li>
+        {% if methodology.doc_url %}
+            <li><strong>Documentation webpage:</strong> <a href="{{ methodology.doc_url }}" target="_blank">{{ methodology.doc_string }}</a></li>
         {% endif %}
-        {% if methodology['aquisitionMethod'] %}
-            <li><strong>Acquisition method:</strong> {{ methodology['aquisitionMethod'] }}</li>
-            <li><strong>Unit:</strong> {{ methodology['unit'] }}</li>
-            <li><strong>Measuring scale:</strong> {{ methodology['measuringScale'] }}</li>
-            <li><strong>Platform:</strong> {{ methodology['platform'] }}</li>
-            <li><strong>Sensor:</strong> {{ methodology['sensor'] }}</li>
-            <li><strong>Spatial resolution:</strong> {{ methodology['spatialResolution'] }}</li>
-            <li><strong>Temporal resolution:</strong> {{ methodology['temporalResolution'] }}</li>
+        {% if methodology.aquisition_method %}
+            <li><strong>Acquisition method:</strong> {{ methodology.aquisition_method }}</li>
+            <li><strong>Unit:</strong> {{ methodology.unit }}</li>
+            <li><strong>Measuring scale:</strong> {{ methodology.measuring_scale }}</li>
+            <li><strong>Platform:</strong> {{ methodology.platform }}</li>
+            <li><strong>Sensor:</strong> {{ methodology.sensor }}</li>
+            <li><strong>Spatial resolution:</strong> {{ methodology.spatial_resolution }}</li>
+            <li><strong>Temporal resolution:</strong> {{ methodology.temporal_resolution }}</li>
         {% endif %}
     </ul>
 </section>
@@ -68,30 +75,30 @@
 <section>
     <h4>Data description</h4>
     <ul>
-        <li><strong>Project ID:</strong> {{data_description['projectID']}}</li>
-        <li><strong>Data type:</strong> {{data_description['dataType']}}</li>
-        <li><strong>File type:</strong> {{data_description['fileType']}}</li>
-        <li><strong>Dataset name:</strong> {{data_description['datasetName']}}</li>
-        <li><strong>Dataset alias:</strong> {{data_description['datasetAlias']}}</li>
-        <li><strong>Ecosystem accounting category:</strong> {{data_description['categoryEcosystemAccounting']}}</li>
-        <li><strong>License:</strong> {{data_description['license']}}</li>
-        <li><strong>Data language:</strong> {{data_description['dataLanguage']}}</li>
-        <li><strong>Metadata language:</strong> {{data_description['metadataLanguage']}}</li>
-        <li><strong>Dataset owner:</strong> {{data_description['datasetOwner']}}</li>
-        <li><strong>Dataset manager:</strong> {{data_description['datasetManager']}}</li>
+        <li><strong>Project ID:</strong> {{data_description.project_id}}</li>
+        <li><strong>Data type:</strong> {{data_description.data_type}}</li>
+        <li><strong>File type:</strong> {{data_description.file_type}}</li>
+        <li><strong>Dataset name:</strong> {{data_description.dataset_name}}</li>
+        <li><strong>Dataset alias:</strong> {{data_description.dataset_alias}}</li>
+        <li><strong>Ecosystem accounting category:</strong> {{data_description.category_ecosystem_accounting}}</li>
+        <li><strong>License:</strong> {{data_description.license}}</li>
+        <li><strong>Data language:</strong> {{data_description.data_language}}</li>
+        <li><strong>Metadata language:</strong> {{data_description.metadata_language}}</li>
+        <li><strong>Dataset owner:</strong> {{data_description.dataset_owner}}</li>
+        <li><strong>Dataset manager:</strong> {{data_description.dataset_manager}}</li>
     </ul>
 </section>
 
 <section>
     <h4>Contacts</h4>
     <ul>
-        {% for contact in project['contacts'] %}
-            <li><strong>{{ contact['firstName'] }} {{ contact['lastName'] }}</strong>
+        {% for contact in project.contacts %}
+            <li><strong>{{ contact.first_name }} {{ contact.last_name }}</strong>
                 <ul>
-                    <li><strong>Role:</strong> {{ contact['contactType'] }}</li>
-                    <li><strong>Organisation:</strong> {{ contact['organisationName'] }}</li>
-                    <li><strong>Email:</strong> {{ contact['email'] }}</li>
-                    <li><strong>Orcid:</strong> <a href="https://orcid.org/{{ contact['orcid'] }}" target="_blank">https://orcid.org/{{ contact['orcid'] }}</a></li>
+                    <li><strong>Role:</strong> {{ contact.contact_type }}</li>
+                    <li><strong>Organisation:</strong> {{ contact.organisation_name }}</li>
+                    <li><strong>Email:</strong> {{ contact.email }}</li>
+                    <li><strong>Orcid:</strong> <a href="https://orcid.org/{{ contact.orcid }}" target="_blank">https://orcid.org/{{ contact.orcid }}</a></li>
                 </ul>
             </li>
         {% endfor %}
@@ -100,7 +107,7 @@
 
 <section>
     <h4>Citation</h4>
-    {% if citation['referenceString'] %}
-        <p><a href="{{ citation['referenceURL'] }}" target="_blank">{{ citation['referenceString'] }}</a></p>
+    {% if citation.reference_string %}
+        <p><a href="{{ citation.reference_url }}" target="_blank">{{ citation.reference_string }}</a></p>
     {% endif %}
 </section>

@@ -3,6 +3,7 @@ import pathlib
 
 import click
 import environ
+import re
 from api import get_client
 from jinja2 import Environment, FileSystemLoader, select_autoescape
 from openpyxl import load_workbook
@@ -23,6 +24,35 @@ template_env = Environment(
     autoescape=select_autoescape(),
 )
 
+def str_to_snake_case(text: str) -> str:
+    """
+    Convert to snake_case.
+    - Header One -> header_one
+    - HeaderTwo -> header_two
+    - headerTwo -> header_two
+    - HEADER -> header
+    - EPSG Code -> epsg_code
+    - someURLValue -> some_url_value
+    """
+    text = text.strip()
+    #  uppercase (>2 letters) converted to lowercase
+    text = re.sub(r'\b[A-Z]{2,}\b', lambda m: m.group(0).lower(), text)
+    # to snake_case
+    text = re.sub(r'(?<!^)(?<![A-Z])(?=[A-Z])', '_', text).replace(" ", "_").lower()
+    return text
+
+def load_workbook_sheet(wb, sheet_name: str, skip_first_row: bool = True):
+    sheet = wb[sheet_name]
+    rows = sheet.iter_rows()
+    
+    # first row is header
+    if skip_first_row:
+        next(rows)  
+        header = [cell.value.strip() for cell in next(rows) if cell.value]
+        return rows, header
+    
+    # first row is data, header is None
+    return rows, None
 
 @click.command()
 @click.argument("url")
@@ -46,11 +76,10 @@ def start(url: str, map_slug: str, schema: str, style: str, wd: pathlib.Path) ->
         titiler_config = conf["titiler"]
 
     wb = load_workbook(str(schema_path))
-    project_sheet = wb["projectMetadata"]
-    rows = project_sheet.iter_rows()
-    # always skip first row
-    next(rows)
-    header = [cell.value.strip() for cell in next(rows) if cell.value]
+    
+    # Load layer group metadata (projectMetadata)
+    rows, header = load_workbook_sheet(wb, "projectMetadata", True)
+    project_metadata = {}
     for row in rows:
         row = [
             cell.value.strip() if isinstance(cell.value, str) else cell.value
@@ -63,13 +92,10 @@ def start(url: str, map_slug: str, schema: str, style: str, wd: pathlib.Path) ->
         break
 
     logging.debug("found_project %s" % project_metadata)
-    project_metadata["contacts"] = []
 
-    contacts_sheet = wb["projectContacts"]
-    rows = contacts_sheet.iter_rows()
-    # always skip first row
-    next(rows)
-    header = [cell.value.strip() for cell in next(rows) if cell.value]
+    # Load project contacts
+    project_metadata["contacts"] = []
+    rows, header = load_workbook_sheet(wb, "projectContacts", True)
     for row in rows:
         row = [
             cell.value.strip() if isinstance(cell.value, str) else cell.value
@@ -77,9 +103,11 @@ def start(url: str, map_slug: str, schema: str, style: str, wd: pathlib.Path) ->
         ]
         if not any(row):
             continue
-
         project_metadata["contacts"].append(dict(zip(header, row, strict=True)))
 
+    logging.info("project_metadata %s" % project_metadata)
+
+    # (re)create project layer group in django
     TOKEN = env("AUTH_TOKEN")
     logging.debug(f"using TOKEN: {TOKEN}")
     client = get_client(base_url=url, token=TOKEN)
@@ -93,21 +121,20 @@ def start(url: str, map_slug: str, schema: str, style: str, wd: pathlib.Path) ->
 
     # TODO: read and save also project owner and contributors
 
-    dataset_sheet = wb["datasetMetadata"]
-    rows = dataset_sheet.iter_rows()
-
-    # header 1 = first row, filled with previous value if empty
+    # Load layer metadata (datasetMetadata) into nested dict
+    # lyr_metadata = {h1: {h2: value}}
+    # h1 = first row, filled with previous value if empty
+    # h2 = second row, should not contain empty values
+    rows, header = load_workbook_sheet(wb, "datasetMetadata", False)
     h1, last_value = [], None
     h1 = [
-        (last_value := cell.value.strip() if cell.value else last_value)
+        (last_value := str_to_snake_case(cell.value) if cell.value else last_value)
         for cell in next(rows)
     ]
-    # header 2 = second row, should not contain empty values
     h2 = [cell.value.strip() for cell in next(rows) if cell.value]
+    h2_snake_case = list(map(str_to_snake_case, h2))
 
-    display_metadata = {h1[0]: {}}
-    logging.info(f"h1: {display_metadata}")
-
+    lyr_metadata = {h1[0]: {}}
     for row in rows:
         row = [
             cell.value.strip() if isinstance(cell.value, str) else cell.value
@@ -115,27 +142,16 @@ def start(url: str, map_slug: str, schema: str, style: str, wd: pathlib.Path) ->
         ]
         if not any(row):
             continue
-        # create display_metadata = {h1: {h2: value}}
         dataset_metadata = dict(zip(h2, row, strict=True))
         dataset_metadata = {
             k: (v if v is not None else "") for k, v in dataset_metadata.items()
         }
-        # Created nested dict with h1 as key for h2 and value
-        for h1_key, h2_key, value in zip(h1, h2, row):
-            if h1_key not in display_metadata:
-                display_metadata[h1_key] = {}
-            if value is not None:
-                display_metadata[h1_key][h2_key] = value
-            else:
-                display_metadata[h1_key][h2_key] = ""
-
-        # rename keys, convert None values to empty string, start each word with lower key
-        display_metadata = {k.replace(" ", "_"): v for k, v in display_metadata.items()}
-        display_metadata = {
-            k[0].lower() + k[1:]: v for k, v in display_metadata.items()
-        }
-
-        logging.debug(f"display_metadata: {display_metadata}")
+        for h1_key, h2_key, value in zip(h1, h2_snake_case, row):
+            if h1_key not in lyr_metadata:
+                lyr_metadata[h1_key] = {}
+            lyr_metadata[h1_key][h2_key] = value if value is not None else ""
+        
+        logging.debug(f"lyr_metadata: {lyr_metadata}")
         logging.debug(f'uploading {dataset_metadata["datasetAlias"]}')
 
         layer_slug = f"{project_slug}_{dataset_metadata['datasetName']}"
@@ -157,10 +173,9 @@ def start(url: str, map_slug: str, schema: str, style: str, wd: pathlib.Path) ->
                 wd=wd,
                 titiler_config=titiler_config,
                 template_env=template_env,
-                lyr_metadata=display_metadata,
+                lyr_metadata=lyr_metadata,
                 project_metdata=project_metadata,
             )
-
 
 if __name__ == "__main__":
     start()

@@ -124,18 +124,10 @@ def create_layer(
 ) -> None:
     category = layer["categoryEcosystemAccounting"].replace(" ", "_").replace(".", "")
     category_slug = f"{project}_{category}"
-
-    # Metadata dictionaries
-    data_description = lyr_metadata["dataDescription"]
-    citation = lyr_metadata["citation"]
-    temporal_scope = lyr_metadata["temporalScope"]
-    geographic_scope = lyr_metadata["geographicScope"]
-    taxonomic_scope = lyr_metadata["taxonomicScope"]
-    methodology = lyr_metadata["methodology"]
-
     template = template_env.get_template("layer_description.html")
     layer_type = get_layer_type(layer)
 
+    logging.info(f"LYR METDATA: {lyr_metadata}")
     logging.debug("First, create the category")
     res = upsert(
         client,
@@ -280,12 +272,7 @@ def create_layer(
         "downloadable": layer_type != LayerType.WMS,
         "legend": style["legend"] if "legend" in style else {},
         "description": template.render(
-            data_description=data_description,
-            citation=citation,
-            temporal_scope=temporal_scope,
-            geographic_scope=geographic_scope,
-            taxonomic_scope=taxonomic_scope,
-            methodology=methodology,
+            lyr_metadata=lyr_metadata,
             project=project_metdata,
         ),
     }
