@@ -93,14 +93,15 @@
     <h4>Contacts</h4>
     <ul>
         {% for contact in project.contacts %}
-            <li><strong>{{ contact.first_name }} {{ contact.last_name }}</strong>
-                <ul>
-                    <li><strong>Role:</strong> {{ contact.contact_type }}</li>
-                    <li><strong>Organisation:</strong> {{ contact.organisation_name }}</li>
-                    <li><strong>Email:</strong> {{ contact.email }}</li>
-                    <li><strong>Orcid:</strong> <a href="https://orcid.org/{{ contact.orcid }}" target="_blank">https://orcid.org/{{ contact.orcid }}</a></li>
-                </ul>
-            </li>
+        <li>
+            <strong>{{ contact.firstName }} {{ contact.lastName }}</strong>
+            <ul>
+                <li><strong>Role:</strong> {{ contact.contactType }}</li>
+                <li><strong>Organisation:</strong> {{ contact.organisationName }}</li>
+                <li><strong>Email:</strong> {{ contact.email|urlize }}</li>
+                <li><strong>Orcid:</strong> <a href="https://orcid.org/{{ contact.orcid }}" target="_blank" rel="noopener noreferrer">https://orcid.org/{{ contact.orcid }}</a></li>
+            </ul>
+        </li>
         {% endfor %}
     </ul>
 </section>
