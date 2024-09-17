@@ -14,7 +14,7 @@
 
 <section>
     <h4>Description</h4>
-    <p>{{ project.projectDescription }}</p>
+    <p>{{ project.projectDescription|safe }}</p>
 
     {% if project.projectKeywords %}
     <p><strong>Tags:</strong> <em>{{ project.projectKeywords }}</em></p>

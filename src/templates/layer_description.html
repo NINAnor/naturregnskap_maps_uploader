@@ -21,7 +21,7 @@
 
 <section>
     <h4>Description</h4>
-    <p>{{ data_description.dataset_description }}</p>
+    <p>{{ data_description.dataset_description|safe }}</p>
     <p><strong>Tags:</strong> <em>{{ data_description.keywords }}</em></p>
 </section>
 
@@ -55,7 +55,7 @@
 
 <section>
     <h4>Methodology</h4>
-    <p>{{ methodology.method_description }}</p>
+    <p>{{ methodology.method_description|safe }}</p>
     <ul>
         {% if methodology.doc_url %}
             <li><strong>Documentation webpage:</strong> <a href="{{ methodology.doc_url }}" target="_blank">{{ methodology.doc_string }}</a></li>
