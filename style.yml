@@ -16,6 +16,7 @@ __default-raster-style: &default-raster-style
   #   "255": [255,255,255]
   rescale: "0,255"
   bidx: 1 # specify which band to use
+  minzoom: 0
 
 
 __sequential-legend-example: &sequential-legend-example
