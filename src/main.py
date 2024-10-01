@@ -1,9 +1,9 @@
 import logging
 import pathlib
+import re
 
 import click
 import environ
-import re
 from api import get_client
 from jinja2 import Environment, FileSystemLoader, select_autoescape
 from openpyxl import load_workbook
@@ -16,6 +16,8 @@ environ.Env.read_env(str(BASE_DIR / ".env"))
 
 DEBUG = env.bool("DEBUG", default=False)
 
+TITILER_URL = env("TITILER_URL")
+
 logging.basicConfig(level=(logging.DEBUG if DEBUG else logging.INFO))
 
 
@@ -23,6 +25,7 @@ template_env = Environment(
     loader=FileSystemLoader(pathlib.Path(__file__).parent / "templates"),
     autoescape=select_autoescape(),
 )
+
 
 def str_to_snake_case(text: str) -> str:
     """
@@ -36,23 +39,25 @@ def str_to_snake_case(text: str) -> str:
     """
     text = text.strip()
     #  uppercase (>2 letters) converted to lowercase
-    text = re.sub(r'\b[A-Z]{2,}\b', lambda m: m.group(0).lower(), text)
+    text = re.sub(r"\b[A-Z]{2,}\b", lambda m: m.group(0).lower(), text)
     # to snake_case
-    text = re.sub(r'(?<!^)(?<![A-Z])(?=[A-Z])', '_', text).replace(" ", "_").lower()
+    text = re.sub(r"(?<!^)(?<![A-Z])(?=[A-Z])", "_", text).replace(" ", "_").lower()
     return text
+
 
 def load_workbook_sheet(wb, sheet_name: str, skip_first_row: bool = True):
     sheet = wb[sheet_name]
     rows = sheet.iter_rows()
-    
+
     # first row is header
     if skip_first_row:
-        next(rows)  
+        next(rows)
         header = [cell.value.strip() for cell in next(rows) if cell.value]
         return rows, header
-    
+
     # first row is data, header is None
     return rows, None
+
 
 @click.command()
 @click.argument("url")
@@ -69,14 +74,12 @@ def start(url: str, map_slug: str, schema: str, style: str, wd: pathlib.Path) ->
     schema_path = wd / schema
 
     style_index = {}
-    titiler_config = {}
     with style_path.open("r") as style_file:
         conf = safe_load(style_file)
         style_index = conf["datasets"]
-        titiler_config = conf["titiler"]
 
     wb = load_workbook(str(schema_path))
-    
+
     # Load layer group metadata (projectMetadata)
     rows, header = load_workbook_sheet(wb, "projectMetadata", True)
     project_metadata = {}
@@ -146,11 +149,11 @@ def start(url: str, map_slug: str, schema: str, style: str, wd: pathlib.Path) ->
         dataset_metadata = {
             k: (v if v is not None else "") for k, v in dataset_metadata.items()
         }
-        for h1_key, h2_key, value in zip(h1, h2_snake_case, row):
+        for h1_key, h2_key, value in zip(h1, h2_snake_case, row, strict=False):
             if h1_key not in lyr_metadata:
                 lyr_metadata[h1_key] = {}
             lyr_metadata[h1_key][h2_key] = value if value is not None else ""
-        
+
         logging.debug(f"lyr_metadata: {lyr_metadata}")
         logging.debug(f'uploading {dataset_metadata["datasetAlias"]}')
 
@@ -171,11 +174,12 @@ def start(url: str, map_slug: str, schema: str, style: str, wd: pathlib.Path) ->
                 slug=layer_slug,
                 style=layer_style,
                 wd=wd,
-                titiler_config=titiler_config,
+                titiler_url=TITILER_URL,
                 template_env=template_env,
                 lyr_metadata=lyr_metadata,
                 project_metdata=project_metadata,
             )
+
 
 if __name__ == "__main__":
     start()

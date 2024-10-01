@@ -2,7 +2,6 @@ import enum
 import json
 import logging
 import pathlib
-import re
 from collections import defaultdict
 
 import fiona
@@ -117,7 +116,7 @@ def create_layer(
     slug: str,
     style: dict,
     wd: pathlib.Path,
-    titiler_config: dict,
+    titiler_url: str,
     template_env: Environment,
     lyr_metadata: dict,
     project_metdata: dict,
@@ -177,9 +176,9 @@ def create_layer(
             else:
                 params.append(f"{key}={value}")
 
-        json_data[
-            "protocol"
-        ] = f"{titiler_config['url']}/cog/tilejson.json?{'&'.join(params)}&url="
+        json_data["protocol"] = (
+            f"{titiler_url}/cog/tilejson.json?{'&'.join(params)}&url="
+        )
     elif layer_type == LayerType.WMS:
         json_data["extra"] = {
             "type": "raster",

@@ -50,7 +50,3 @@ datasets:
       <<: *default-raster-style
     legend:
       <<: *sequential-legend-example
-
-
-titiler:
-  url: "http://titiler" 
