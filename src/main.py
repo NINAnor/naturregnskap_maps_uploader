@@ -1,30 +1,14 @@
 import logging
 import pathlib
 import re
+from typing import Any
 
 import click
-import environ
 from api import get_client
-from jinja2 import Environment, FileSystemLoader, select_autoescape
+from config import TOKEN
 from openpyxl import load_workbook
 from upload import check_map, create_layer, create_project_folder
 from yaml import safe_load
-
-env = environ.Env()
-BASE_DIR = pathlib.Path(__file__).parent.parent
-environ.Env.read_env(str(BASE_DIR / ".env"))
-
-DEBUG = env.bool("DEBUG", default=False)
-
-TITILER_URL = env("TITILER_URL")
-
-logging.basicConfig(level=(logging.DEBUG if DEBUG else logging.INFO))
-
-
-template_env = Environment(
-    loader=FileSystemLoader(pathlib.Path(__file__).parent / "templates"),
-    autoescape=select_autoescape(),
-)
 
 
 def str_to_snake_case(text: str) -> str:
@@ -45,7 +29,11 @@ def str_to_snake_case(text: str) -> str:
     return text
 
 
-def load_workbook_sheet(wb, sheet_name: str, skip_first_row: bool = True):
+def load_workbook_sheet(
+    wb,
+    sheet_name: str,
+    skip_first_row: bool = True,
+) -> tuple[Any, list[str] | None]:
     sheet = wb[sheet_name]
     rows = sheet.iter_rows()
 
@@ -111,7 +99,6 @@ def start(url: str, map_slug: str, schema: str, style: str, wd: pathlib.Path) ->
     logging.info("project_metadata %s" % project_metadata)
 
     # (re)create project layer group in django
-    TOKEN = env("AUTH_TOKEN")
     logging.debug(f"using TOKEN: {TOKEN}")
     client = get_client(base_url=url, token=TOKEN)
     check_map(client, map_slug)
@@ -119,7 +106,6 @@ def start(url: str, map_slug: str, schema: str, style: str, wd: pathlib.Path) ->
         client,
         map_slug,
         project_metadata,
-        template_env,
     )
 
     # TODO: read and save also project owner and contributors
@@ -174,8 +160,6 @@ def start(url: str, map_slug: str, schema: str, style: str, wd: pathlib.Path) ->
                 slug=layer_slug,
                 style=layer_style,
                 wd=wd,
-                titiler_url=TITILER_URL,
-                template_env=template_env,
                 lyr_metadata=lyr_metadata,
                 project_metdata=project_metadata,
             )

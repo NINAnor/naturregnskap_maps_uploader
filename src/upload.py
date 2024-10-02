@@ -5,8 +5,8 @@ import pathlib
 from collections import defaultdict
 
 import fiona
+from config import SKIP_SOURCE_FILES, TITILER_URL, template_env
 from httpx import Client, Response
-from jinja2 import Environment
 
 
 def upsert(
@@ -50,7 +50,6 @@ def create_project_folder(
     client: Client,
     map_slug: str,
     project: dict,
-    template_env: Environment,
 ) -> str:
     slug = project["projectNumber"]
     template = template_env.get_template("project_description.html")
@@ -116,8 +115,6 @@ def create_layer(
     slug: str,
     style: dict,
     wd: pathlib.Path,
-    titiler_url: str,
-    template_env: Environment,
     lyr_metadata: dict,
     project_metdata: dict,
 ) -> None:
@@ -177,7 +174,7 @@ def create_layer(
                 params.append(f"{key}={value}")
 
         json_data["protocol"] = (
-            f"{titiler_url}/cog/tilejson.json?{'&'.join(params)}&url="
+            f"{TITILER_URL}/cog/tilejson.json?{'&'.join(params)}&url="
         )
     elif layer_type == LayerType.WMS:
         json_data["extra"] = {
@@ -225,7 +222,7 @@ def create_layer(
 
             source_file = layer_source_file
 
-        if source_file.exists():
+        if source_file.exists() and not SKIP_SOURCE_FILES:
             res = client.post(
                 f"{source_type}/{source_slug}/upload/",
                 data={
