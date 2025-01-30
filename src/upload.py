@@ -5,8 +5,9 @@ import pathlib
 from collections import defaultdict
 
 import fiona
-from config import SKIP_SOURCE_FILES, TITILER_URL, template_env
 from httpx import Client, Response
+
+from config import SKIP_SOURCE_FILES, TITILER_URL, template_env
 
 
 def upsert(
@@ -174,7 +175,7 @@ def create_layer(
                 params.append(f"{key}={value}")
 
         json_data["protocol"] = (
-            f"{TITILER_URL}/cog/tilejson.json?{'&'.join(params)}&url="
+            f"{TITILER_URL}/cog/WebMercatorQuad/tilejson.json?{'&'.join(params)}&url="
         )
     elif layer_type == LayerType.WMS:
         json_data["extra"] = {
