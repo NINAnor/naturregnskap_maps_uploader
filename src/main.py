@@ -1,14 +1,13 @@
+import json
 import logging
 import pathlib
 import re
 from typing import Any
 
 import click
-from api import get_client
-from config import TOKEN
 from openpyxl import load_workbook
-from upload import check_map, create_layer, create_project_folder
-from yaml import safe_load
+
+from config import template_env
 
 
 def str_to_snake_case(text: str) -> str:
@@ -48,23 +47,14 @@ def load_workbook_sheet(
 
 
 @click.command()
-@click.argument("url")
-@click.argument("map_slug")
 @click.option("--schema", default="schema.xlsx", type=click.Path())
-@click.option("--style", default="style.yml", type=click.Path())
 @click.option(
     "--wd",
     default=".",
     type=click.Path(dir_okay=True, exists=True, readable=True, path_type=pathlib.Path),
 )
-def start(url: str, map_slug: str, schema: str, style: str, wd: pathlib.Path) -> None:
-    style_path = wd / style
+def start(schema: str, wd: pathlib.Path) -> None:
     schema_path = wd / schema
-
-    style_index = {}
-    with style_path.open("r") as style_file:
-        conf = safe_load(style_file)
-        style_index = conf["datasets"]
 
     wb = load_workbook(str(schema_path))
 
@@ -98,18 +88,6 @@ def start(url: str, map_slug: str, schema: str, style: str, wd: pathlib.Path) ->
 
     logging.info("project_metadata %s" % project_metadata)
 
-    # (re)create project layer group in django
-    logging.debug(f"using TOKEN: {TOKEN}")
-    client = get_client(base_url=url, token=TOKEN)
-    check_map(client, map_slug)
-    project_slug = create_project_folder(
-        client,
-        map_slug,
-        project_metadata,
-    )
-
-    # TODO: read and save also project owner and contributors
-
     # Load layer metadata (datasetMetadata) into nested dict
     # lyr_metadata = {h1: {h2: value}}
     # h1 = first row, filled with previous value if empty
@@ -122,6 +100,56 @@ def start(url: str, map_slug: str, schema: str, style: str, wd: pathlib.Path) ->
     ]
     h2 = [cell.value.strip() for cell in next(rows) if cell.value]
     h2_snake_case = list(map(str_to_snake_case, h2))
+
+    map_json = {
+        "id": "localEA",
+        "title": "Kartportal for Finskala Naturregnskap",
+        "subtitle": "Local Ecosystem Accounts",
+        "description": "",
+        "icon": "https://maps.nina.no/assets/logosmall-BFfoJdyr.png",
+        "baseMap": "positron",
+        "layerOrder": [],
+        "viewState": {
+            "longitude": 17.8,
+            "latitude": 65.6,
+            "zoom": 4,
+        },
+        "expandedItems": [],
+        "items": {
+            "root": {
+                "name": "Layers",
+                "type": "folder",
+                "children": [
+                    project_metadata["projectID"],
+                ],
+            },
+            project_metadata["projectID"]: {
+                "name": project_metadata["projectTitle"],
+                "type": "folder",
+                "description": template_env.get_template(
+                    "project_description.md",
+                )
+                .render(
+                    project=project_metadata,
+                )
+                .strip(),
+                "children": [],
+            },
+        },
+        "config": {
+            "titiler_api_url": "/titiler",
+            "theme": "nina",
+            "language": "no",
+            "footer": {
+                "items": [
+                    "![](https://maps.nina.no/assets/logowhite-6HSLYLYZ.png)",
+                    "Norsk institutt for naturforskning - [www.nina.no](https://www.nina.no)",
+                ],
+                "justify": "justify-between",
+                "align": "items-baseline",
+            },
+        },
+    }
 
     lyr_metadata = {h1[0]: {}}
     for row in rows:
@@ -140,29 +168,40 @@ def start(url: str, map_slug: str, schema: str, style: str, wd: pathlib.Path) ->
                 lyr_metadata[h1_key] = {}
             lyr_metadata[h1_key][h2_key] = value if value is not None else ""
 
-        logging.debug(f"lyr_metadata: {lyr_metadata}")
-        logging.debug(f'uploading {dataset_metadata["datasetAlias"]}')
+        if dataset_metadata["categoryEcosystemAccounting"] not in map_json["items"]:
+            map_json["items"][dataset_metadata["categoryEcosystemAccounting"]] = {
+                "type": "folder",
+                "name": dataset_metadata["kategoriNaturregnskap"],
+                "children": [],
+            }
 
-        layer_slug = f"{project_slug}_{dataset_metadata['datasetName']}"
-
-        if dataset_metadata["skip"] == 0:
-            layer_style = (
-                style_index[layer_slug]
-                if layer_slug in style_index
-                else style_index["DEFAULT"]
+            map_json["items"][project_metadata["projectID"]]["children"].append(
+                dataset_metadata["categoryEcosystemAccounting"],
             )
 
-            create_layer(
-                client=client,
-                map_slug=map_slug,
-                layer=dataset_metadata,
-                project=project_slug,
-                slug=layer_slug,
-                style=layer_style,
-                wd=wd,
+        category = map_json["items"][dataset_metadata["categoryEcosystemAccounting"]]
+
+        item = {
+            "name": dataset_metadata["datasetAlias"],
+            "type": "layer",
+            "description": template_env.get_template("layer_description.md")
+            .render(
                 lyr_metadata=lyr_metadata,
-                project_metdata=project_metadata,
+                project=project_metadata,
             )
+            .strip(),
+            "layer": {
+                "type": "raster",
+            },
+        }
+
+        map_json["items"][dataset_metadata["datasetName"]] = item
+
+        category["children"].append(
+            dataset_metadata["datasetName"],
+        )
+
+    print(json.dumps(map_json))
 
 
 if __name__ == "__main__":
